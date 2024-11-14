@@ -49,3 +49,4 @@ class DataFetcher:
         df['DateTime'] = pd.to_datetime(df['DateTime'])
         df.set_index('DateTime', inplace=True)
         return df
+    
