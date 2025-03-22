@@ -50,3 +50,26 @@ class DataFetcher:
         df.set_index('DateTime', inplace=True)
         return df
     
+    # hourly fetcher
+     
+    def fetch_hourly_variable(self, variable):
+        dataset = ee.ImageCollection('ECMWF/ERA5_LAND/HOURLY') \
+            .filterDate(self.start_date, self.end_date) \
+            .select(variable) \
+            .filterBounds(self.point)
+        
+        def to_feature(image):
+            reduction = image.reduceRegion(
+                reducer=ee.Reducer.mean(),
+                geometry=self.point,
+                scale=11000  # Adjust scale to match dataset resolution
+            )
+            value = reduction.get(variable)
+            return ee.Feature(None, {'value': value, 'time': image.date().format()})
+        
+        data_feat = dataset.map(to_feature)
+        data_list = data_feat.reduceColumns(ee.Reducer.toList(2), ['time', 'value']).getInfo()['list']
+        df = pd.DataFrame(data_list, columns=["DateTime", variable])
+        df['DateTime'] = pd.to_datetime(df['DateTime'])
+        df.set_index('DateTime', inplace=True)
+        return df
